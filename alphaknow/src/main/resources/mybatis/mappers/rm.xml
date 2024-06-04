@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spring.alphaknow.dao.rmDAO.ReceivingManagementDAO">
+
+	<!-- 첫페이지 -->
+	<select id="receivingManagementSelect" resultType="map">
+		SELECT 
+			rm.TRADE_CODE, 
+			rcl.COMPANY_NAME, 
+			rm.SIGN_STATUS, 
+			rm.RECEIVING_DATE, 
+			SUM(rm.PRODUCT_ALL_PRICE) PRODUCT_ALL_PRICE, 
+			rm.REQUEST_DATE, 
+			rm.REQUEST_PERSON, 
+			rm.MODIFY_REQUEST_DATE, 
+			rm.MODIFY_REQUEST_PERSON, 
+			rm.SIGN_PERSON
+		FROM 
+			RECEIVING_MANAGEMENT rm
+		JOIN 
+			COMPANY_AND_PRODUCT_TEMP capt 
+		ON 
+			rm.COMPANY_AND_PRODUCT_TEMP_SEQ = CAPT.COMPANY_AND_PRODUCT_TEMP_SEQ
+		JOIN 
+			RECEIVING_COMPANY_LIST rcl 
+		ON 
+			capt.COMPANY_SEQ = rcl.COMPANY_SEQ
+		JOIN 
+			PRODUCT_TEMP pt 
+		ON capt.PRODUCT_SEQ = pt.PRODUCT_SEQ
+		GROUP BY 
+			rm.TRADE_CODE, 
+			rcl.COMPANY_NAME, 
+			rm.SIGN_STATUS, 
+			rm.RECEIVING_DATE, 
+			rm.REQUEST_DATE, 
+			rm.REQUEST_DATE, 
+			rm.REQUEST_PERSON, 
+			rm.MODIFY_REQUEST_DATE, 
+			rm.MODIFY_REQUEST_PERSON, 
+			rm.SIGN_PERSON
+	</select>
+	
+	<!-- ajax 입고신청 -->
+	<select id="receivingManagementAjaxSelect" resultType="map">
+		SELECT 
+			CAPT.COMPANY_AND_PRODUCT_TEMP_SEQ,
+			PT.PRODUCT_CODE, 
+			pt.PRODUCT_NAME, 
+			RCL.COMPANY_SEQ, 
+			RCL.COMPANY_NAME, 
+			pt.PRODUCT_PRICE, 
+			i.PRODUCT_AMOUNT
+		FROM 
+			PRODUCT_TEMP pt
+		JOIN 
+			COMPANY_AND_PRODUCT_TEMP capt 
+		ON 
+			PT.PRODUCT_SEQ = CAPT.PRODUCT_SEQ
+		JOIN 
+			RECEIVING_COMPANY_LIST rcl 
+		ON 
+			CAPT.COMPANY_SEQ = RCL.COMPANY_SEQ
+		LEFT OUTER JOIN 
+			INVENTORY i 
+		ON 
+			i.PRODUCT_SEQ = pt.PRODUCT_SEQ
+	</select>
+	
+	<!-- 입고신청란 -->
+	<select id="receivingManagementAjaxSelect2" resultType="map">
+		SELECT 
+			COMPANY_NAME,
+			COMPANY_EMPLOYEE, 
+			ADDRESS 
+		FROM 
+			RECEIVING_COMPANY_LIST
+		WHERE 
+			COMPANY_SEQ = #{COMPANY_SEQ}
+	</select>
+	
+	<!-- 입고신청 올리기 -->
+	<insert id="receivingManagementInsert" parameterType="com.spring.alphaknow.dto.rmDTO.ReceivingManagementInsertDTO">
+		INSERT INTO 
+			RECEIVING_MANAGEMENT (
+				TRADE_SEQ,
+				TRADE_CODE,
+				REQUEST_DATE,
+				REQUEST_PERSON,
+				REQUEST_ADDR,
+				COMPANY_AND_PRODUCT_TEMP_SEQ,
+				REQUEST_AMOUNT,
+				PRODUCT_ALL_PRICE,
+				LOT,
+				SIGN_STATUS
+			)
+		VALUES (
+			TRADE_SEQ.NEXTVAL,
+			#{trade_code},
+			#{request_date},
+			#{request_person},
+			#{request_addr},
+			#{company_and_product_temp_seq},
+			#{request_amount},
+			#{product_all_price},
+			'PD'||TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')||'LOT',
+			'결재대기'
+		)
+	</insert>
+	
+	<!-- 입고목록 삭제 -->
+	<delete id="receivingManagementDelete" parameterType="com.spring.alphaknow.dto.rmDTO.ReceivingManagementDTO">
+		DELETE FROM 
+			RECEIVING_MANAGEMENT
+		WHERE 
+			TRADE_CODE = #{trade_code}
+	</delete>
+	
+	<!-- 입고목록 상세보기 -->
+	<select id="receivingManagementAjaxSelect3" parameterType="string" resultType="map">
+		SELECT
+			rm.TRADE_CODE,
+			pt.PRODUCT_SEQ, 
+			pt.PRODUCT_CODE, 
+			pt.PRODUCT_NAME, 
+			rm.LOT,
+			rm.REQUEST_AMOUNT, 
+			pt.PRODUCT_PRICE, 
+			rm.PRODUCT_ALL_PRICE
+		FROM 
+			RECEIVING_MANAGEMENT rm
+		JOIN 
+			COMPANY_AND_PRODUCT_TEMP capt 
+		ON 
+			rm.COMPANY_AND_PRODUCT_TEMP_SEQ = capt.COMPANY_AND_PRODUCT_TEMP_SEQ
+		JOIN 
+			PRODUCT_TEMP pt 
+		ON 
+			CAPT.PRODUCT_SEQ = PT.PRODUCT_SEQ
+		WHERE 
+			rm.TRADE_CODE = #{trade_code}
+	</select>
+
+	
+	<!-- 수정하기 클릭이벤트(입고신청서) -->
+	<select id="receivingManagementAjaxSelect4" parameterType="string" resultType="map">
+		SELECT 
+			rm.TRADE_CODE, 
+			rm.REQUEST_DATE, 
+			rm.REQUEST_PERSON, 
+			rm.REQUEST_ADDR, 
+			rcl.COMPANY_CODE, 
+			rcl.COMPANY_NAME, 
+			rcl.COMPANY_EMPLOYEE, 
+			rcl.ADDRESS,
+			pt.PRODUCT_SEQ,
+			pt.PRODUCT_CODE, 
+			pt.PRODUCT_NAME, 
+			rm.REQUEST_AMOUNT, 
+			pt.PRODUCT_PRICE, 
+			rm.REQUEST_AMOUNT*pt.PRODUCT_PRICE PRODUCT_ALL_PRICE
+		FROM 
+			RECEIVING_MANAGEMENT rm
+		JOIN 
+			COMPANY_AND_PRODUCT_TEMP capt 
+		ON 
+			capt.COMPANY_AND_PRODUCT_TEMP_SEQ = rm.COMPANY_AND_PRODUCT_TEMP_SEQ
+		JOIN 
+			RECEIVING_COMPANY_LIST rcl 
+		ON
+			capt.COMPANY_SEQ = rcl.COMPANY_SEQ
+		JOIN 
+			PRODUCT_TEMP pt 
+		ON 
+			CAPT.PRODUCT_SEQ = PT.PRODUCT_SEQ
+		WHERE 
+			rm.TRADE_CODE = #{trade_code}
+	</select>
+	
+	
+	<!-- 입고신청서 수정 올리기 -->
+	<update id="receivingManagementUpdate" parameterType="com.spring.alphaknow.dto.rmDTO.ReceivingManagementUpdateDTO">
+		UPDATE (
+			SELECT 
+				RECEIVING_MANAGEMENT.MODIFY_REQUEST_DATE,
+				RECEIVING_MANAGEMENT.MODIFY_REQUEST_PERSON,
+				RECEIVING_MANAGEMENT.REQUEST_ADDR,
+				RECEIVING_MANAGEMENT.REQUEST_AMOUNT,
+				RECEIVING_MANAGEMENT.PRODUCT_ALL_PRICE
+				FROM RECEIVING_MANAGEMENT
+				JOIN COMPANY_AND_PRODUCT_TEMP ON RECEIVING_MANAGEMENT.COMPANY_AND_PRODUCT_TEMP_SEQ = COMPANY_AND_PRODUCT_TEMP.COMPANY_AND_PRODUCT_TEMP_SEQ
+				JOIN PRODUCT_TEMP ON COMPANY_AND_PRODUCT_TEMP.PRODUCT_SEQ = PRODUCT_TEMP.PRODUCT_SEQ
+				WHERE PRODUCT_TEMP.PRODUCT_SEQ = #{product_seq}
+		) SET
+			MODIFY_REQUEST_DATE = #{modify_request_date},
+			MODIFY_REQUEST_PERSON = #{modify_request_person},
+			REQUEST_ADDR = #{request_addr},
+			REQUEST_AMOUNT = #{request_amount},
+			PRODUCT_ALL_PRICE = #{product_all_price}
+	</update>
+	
+	
+	<!-- 결제완료시 이벤트 -->
+	<update id="receivingSign" parameterType="com.spring.alphaknow.dto.rmDTO.ReceivingSignDTO">
+		UPDATE 
+			RECEIVING_MANAGEMENT
+		SET
+			SIGN_STATUS = '결재완료',
+			SIGN_PERSON = #{sign_person}
+		WHERE 
+			TRADE_CODE = #{trade_code}
+	</update>
+	
+	<!-- 선택반려시 이벤트 -->
+	<update id="receivingSign2" parameterType="com.spring.alphaknow.dto.rmDTO.ReceivingSignDTO">
+		UPDATE 
+			RECEIVING_MANAGEMENT
+		SET
+			SIGN_STATUS = '반려'
+		WHERE 
+			TRADE_CODE = #{trade_code}
+	</update>
+	
+	<!-- 입고완료 이벤트 -->
+	
+		<!-- 입고완료 버튼 이벤트 -->
+		<insert id="receivingToInventory" parameterType="com.spring.alphaknow.dto.rmDTO.ReceivingManagementAjax3DTO">
+			INSERT INTO 
+				INVENTORY (
+					INVENTORY_SEQ, 
+					PRODUCT_SEQ, 
+					PRODUCT_AMOUNT, 
+					LOT, 
+					PRODUCT_TYPE
+				)
+				VALUES (
+					INVENTORY_SEQ.nextval, 
+					#{productSeq}, 
+					#{requestAmount},
+					#{lot}, 
+					'부품'
+				)
+		</insert>
+		
+		<!-- 입고완료시 입고처리 이벤트 -->
+		<update id="receivingToInventory2" parameterType="com.spring.alphaknow.dto.rmDTO.ReceivingSignDTO">
+			UPDATE 
+				RECEIVING_MANAGEMENT
+			SET
+				RECEIVING_DATE = sysdate,
+				SIGN_STATUS = '입고완료'
+			WHERE 
+				TRADE_CODE = #{tradeCode}
+		</update>
+</mapper>
